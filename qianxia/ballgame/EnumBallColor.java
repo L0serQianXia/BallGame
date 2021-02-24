@@ -6,5 +6,5 @@ package qianxia.ballgame;
  * @Date: 2021/01/22-18:06
  */
 public enum EnumBallColor{
-    WHITE, GREEN, BLUE
+    WHITE, GREEN, BLUE, RED, CYAN
 }

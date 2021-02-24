@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 /**
  * @Author: QianXia
@@ -17,18 +18,23 @@ import javax.swing.JFrame;
  */
 public class UI extends JFrame {
     private final int WIDTH = 580, HEIGHT = 560;
+    public final String BASIC_TITLE = "Fake Magic Lines v1.1";
 
     public static UI INSTANCE;
-    private Graphics graphics;
-    private List<Ball> balls = new ArrayList<>();
-    private Random rm = new Random();
 
+    private List<Ball> balls = new ArrayList<>();
+    private List<Ball> ballsToSpawn = new ArrayList<>();
     private Ball selectedBall = null;
+    private int score = 0;
+    private long gameStartTime = -1;
+
+    private Random rm = new Random();
+    private Graphics graphics;
 
     public UI() {
         UI.INSTANCE = this;
 
-        this.setTitle("Fake Magic Lines v1.0");
+        this.setTitle(BASIC_TITLE);
         this.setResizable(false);
         this.setBounds(0, 0, WIDTH, HEIGHT);
         this.setVisible(true);
@@ -40,16 +46,25 @@ public class UI extends JFrame {
                 int mouseX = e.getX();
                 int mouseY = e.getY();
 
-                if (e.getButton() == 3) {
-                    UI.INSTANCE.balls.clear();
-                    UI.INSTANCE.repaint();
+                if (e.getButton() == 2) {
+                    int result = JOptionPane.showConfirmDialog(null, "确定重置游戏？", "提示：", JOptionPane.YES_NO_OPTION);
+
+                    if (result == 0) {
+                        UI.INSTANCE.resetGame();
+                    }
                     return;
                 }
 
                 Ball ball = UI.INSTANCE.getBallFromMousePosition(mouseX, mouseY);
                 int[] position = UI.INSTANCE.getGamePositionByMousePosition(mouseX, mouseY);
 
-                if (UI.INSTANCE.selectedBall != null) {
+                if (UI.INSTANCE.selectedBall == ball) {
+                    UI.INSTANCE.selectedBall = null;
+                    UI.INSTANCE.drawBalls();
+                    return;
+                }
+
+                if (UI.INSTANCE.selectedBall != null && ball == null) {
                     UI.INSTANCE.moveBall(ball, position);
                 } else {
                     UI.INSTANCE.selectedBall = ball;
@@ -58,7 +73,17 @@ public class UI extends JFrame {
             }
         });
 
+        this.gameStartTime = System.currentTimeMillis();
         this.graphics = this.getGraphics();
+        (new UpdateScore()).start();
+    }
+
+    public void resetGame() {
+        this.score = 0;
+        this.selectedBall = null;
+        this.balls.clear();
+        this.repaint();
+        this.gameStartTime = System.currentTimeMillis();
     }
 
     public void moveBall(Ball ball, int[] position) {
@@ -67,14 +92,24 @@ public class UI extends JFrame {
                 this.selectedBall = null;
                 return;
             }
+
             this.selectedBall.setRow(position[0]);
             this.selectedBall.setColumn(position[1]);
             this.selectedBall = null;
-            this.randomNewBall(3);
+
+            if (!this.ballsToSpawn.isEmpty()) {
+                for (Ball b : this.ballsToSpawn) {
+                    if (this.getBallFromGamePosition(new int[] { b.getRow(), b.getColumn() }) != null) {
+                        this.randomNewBall(1);
+                        continue;
+                    }
+                    this.newBall(b);
+                }
+                this.ballsToSpawn.clear();
+            }
         }
 
         this.repaint();
-        this.drawBalls();
     }
 
     public int[] getGamePositionByMousePosition(int mouseX, int mouseY) {
@@ -142,6 +177,10 @@ public class UI extends JFrame {
 
     public void newBall(EnumBallColor color, int row, int column) {
         Ball ball = new Ball(color, row, column);
+        this.newBall(ball);
+    }
+
+    public void newBall(Ball ball) {
         this.balls.add(ball);
     }
 
@@ -150,14 +189,14 @@ public class UI extends JFrame {
             this.randomNewBall(3);
         }
 
+        this.updateBalls();
+
         for (Ball ball : this.balls) {
             this.drawBall(ball);
         }
-        this.updateBalls();
     }
 
     public void updateBalls() {
-        boolean canBoom = false;
         int temp = 0;
 
         List<Ball> needToRemoves = new ArrayList<>();
@@ -176,6 +215,7 @@ public class UI extends JFrame {
                     temp++;
                     balls.add(newBall);
                 } else {
+                    balls.clear();
                     continue out;
                 }
                 balls.add(ball);
@@ -201,6 +241,7 @@ public class UI extends JFrame {
                     temp++;
                     balls.add(newBall);
                 } else {
+                    balls.clear();
                     continue out;
                 }
                 balls.add(ball);
@@ -211,9 +252,113 @@ public class UI extends JFrame {
                 }
             }
         }
-        for (Ball ball : needToRemoves) {
-            this.balls.remove(ball);
+
+        out: for (Ball ball : this.balls) {
+            List<Ball> balls = new ArrayList<>();
+            int[] ballPosition = new int[] { ball.getRow(), ball.getColumn() };
+            for (int i = 1; i < 5; i++) {
+                ballPosition = new int[] { ball.getRow() + i, ball.getColumn() + i };
+                Ball newBall = this.getBallFromGamePosition(ballPosition);
+
+                if (newBall == null) {
+                    continue out;
+                }
+                if (newBall.getColor() == ball.getColor()) {
+                    temp++;
+                    balls.add(newBall);
+                } else {
+                    balls.clear();
+                    continue out;
+                }
+                balls.add(ball);
+            }
+            if (temp >= 5) {
+                for (Ball needToRemoveBall : balls) {
+                    needToRemoves.add(needToRemoveBall);
+                }
+            }
         }
+
+        out: for (Ball ball : this.balls) {
+            List<Ball> balls = new ArrayList<>();
+            int[] ballPosition = new int[] { ball.getRow(), ball.getColumn() };
+            for (int i = 1; i < 5; i++) {
+                ballPosition = new int[] { ball.getRow() - i, ball.getColumn() + i };
+                Ball newBall = this.getBallFromGamePosition(ballPosition);
+
+                if (newBall == null) {
+                    continue out;
+                }
+                if (newBall.getColor() == ball.getColor()) {
+                    temp++;
+                    balls.add(newBall);
+                } else {
+                    balls.clear();
+                    continue out;
+                }
+                balls.add(ball);
+            }
+            if (temp >= 5) {
+                for (Ball needToRemoveBall : balls) {
+                    needToRemoves.add(needToRemoveBall);
+                }
+            }
+        }
+
+        if (needToRemoves.size() != 0) {
+            for (Ball ball : needToRemoves) {
+                this.balls.remove(ball);
+            }
+            this.score += (needToRemoves.size() - 7) * 3;
+        }
+
+        if (!this.hasEmpty()) {
+            JOptionPane.showMessageDialog(null, "得分：" + this.score + "\n用时：" + this.getTime(), "游戏结束，按下鼠标滚轮重置游戏",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            if (!this.ballsToSpawn.isEmpty()) {
+                this.ballsToSpawn.clear();
+            }
+            for (int i = 0; i < 3; i++) {
+                int row = rm.nextInt(9);
+                int column = rm.nextInt(9);
+                int colorIndex = rm.nextInt(EnumBallColor.values().length);
+
+                if (this.hasEmpty()) {
+                    if (this.getBallFromGamePosition(new int[] { row, column }) != null) {
+                        i--;
+                        continue;
+                    }
+                } else {
+                    return;
+                }
+                EnumBallColor color = EnumBallColor.values()[colorIndex];
+                Ball ball = new Ball(color, row, column);
+                this.ballsToSpawn.add(ball);
+            }
+        }
+    }
+
+    public String getTime() {
+        long nowTime = System.currentTimeMillis();
+
+        int seconds = (int) (nowTime - this.gameStartTime) / 1000;
+        int minutes = seconds / 60;
+        int hours = minutes / 60;
+
+        if (minutes == 0) {
+            return seconds + "秒";
+        }
+
+        seconds -= minutes * 60;
+
+        if (hours == 0) {
+            return minutes + "分" + seconds + "秒";
+        }
+
+        minutes -= hours * 60;
+
+        return hours + "小时" + minutes + "分" + seconds + "秒";
     }
 
     public void randomNewBall(int numbers) {
@@ -222,13 +367,29 @@ public class UI extends JFrame {
             int column = rm.nextInt(9);
             int colorIndex = rm.nextInt(EnumBallColor.values().length);
 
-            if (this.getBallFromGamePosition(new int[] { row, column }) != null) {
-                i--;
-                continue;
+            if (this.hasEmpty()) {
+                if (this.getBallFromGamePosition(new int[] { row, column }) != null) {
+                    i--;
+                    continue;
+                }
+            } else {
+                return;
             }
 
             this.newBall(EnumBallColor.values()[colorIndex], row, column);
         }
+    }
+
+    public boolean hasEmpty() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                Ball ball = this.getBallFromGamePosition(new int[] { i, j });
+                if (ball == null) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void drawBall(Ball ball) {
@@ -244,6 +405,12 @@ public class UI extends JFrame {
                 break;
             case WHITE:
                 graphics.setColor(new Color(255, 255, 255));
+                break;
+            case RED:
+                graphics.setColor(new Color(205, 92, 92));
+                break;
+            case CYAN:
+                graphics.setColor(new Color(0, 139, 139));
                 break;
             default:
                 graphics.setColor(new Color(0, 0, 0));
@@ -311,5 +478,30 @@ public class UI extends JFrame {
     public void paint(Graphics g) {
         this.drawBackground(g);
         this.drawBalls();
+        update(this.getGraphics());
+    }
+
+    /**
+     * 修复闪屏需要的 
+     * 这里查了下CSDN 
+     * 说是update方法清屏会导致闪屏 
+     * 重写一下这个方法让他什么也不做就可以了
+     */
+    @Override
+    public void update(Graphics g) {
+    }
+
+    class UpdateScore extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                UI.INSTANCE.setTitle(BASIC_TITLE + " - Score:" + UI.INSTANCE.score);
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }
