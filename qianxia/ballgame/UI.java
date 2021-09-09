@@ -335,6 +335,9 @@ public class UI extends JFrame {
         }
 
         if (!this.hasEmpty()) {
+            for (Ball ball : balls) {
+                this.drawBall(ball);
+            }
             JOptionPane.showMessageDialog(null, "得分：" + this.score + "\n用时：" + this.getTime(), "游戏结束，按下鼠标滚轮重置游戏",
                     JOptionPane.INFORMATION_MESSAGE);
         } else {
