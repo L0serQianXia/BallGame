@@ -419,6 +419,10 @@ public class UI extends JFrame {
     }
 
     public void drawBall(Ball ball) {
+        if (graphics == null) {
+            System.out.println("graphics == null, let's get it again!");
+            graphics = this.getGraphics();
+        }
         int realX = 20;
         int realY = 20;
 
