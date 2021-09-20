@@ -95,8 +95,28 @@ public class UI extends JFrame {
                 return;
             }
 
-            this.selectedBall.setRow(position[0]);
-            this.selectedBall.setColumn(position[1]);
+            List<FindPathUtils.Node> path = FindPathUtils.findPath(new int[]{selectedBall.getRow(), selectedBall.getColumn()}, position);
+            // path == null 说明这个位置无法到达，抖动表示错误的位置移动
+            if (path == null) {
+                int x = this.getX();
+                int y = this.getY();
+                for (int i = 1; i < 10; i++) {
+                    this.setLocation(this.getX() - new Random().nextInt(20), this.getY() + new Random().nextInt(20));
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    this.setLocation(x, y);
+                }
+                return;
+            }
+
+            for (FindPathUtils.Node node : path) {
+                this.selectedBall.setRow(node.x);
+                this.selectedBall.setColumn(node.y);
+                this.repaint();
+            }
             this.selectedBall = null;
             
         	if(!this.boomed) {
@@ -485,8 +505,12 @@ public class UI extends JFrame {
     }
 
     public Ball getBallFromGamePosition(int[] position) {
+        return getBallFromGamePosition(position[0], position[1]);
+    }
+
+    public Ball getBallFromGamePosition(int x, int y) {
         for (Ball ball : this.balls) {
-            boolean flag = ball.getRow() == position[0] && ball.getColumn() == position[1];
+            boolean flag = ball.getRow() == x && ball.getColumn() == y;
             if (flag) {
                 return ball;
             }
