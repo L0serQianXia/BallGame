@@ -1,15 +1,13 @@
 package qianxia.ballgame;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 
 /**
  * @Author: QianXia
@@ -18,7 +16,7 @@ import javax.swing.JOptionPane;
  */
 public class UI extends JFrame {
 	private static final long serialVersionUID = 9107930218742074976L;
-	private final int WIDTH = 580, HEIGHT = 560;
+	public final int WIDTH = 580, HEIGHT = 560;
     public final String BASIC_TITLE = "Fake Magic Lines v1.2";
 
     public static UI INSTANCE;
@@ -115,7 +113,12 @@ public class UI extends JFrame {
             for (FindPathUtils.Node node : path) {
                 this.selectedBall.setRow(node.x);
                 this.selectedBall.setColumn(node.y);
-                this.repaint();
+                paint(getGraphics());
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
             this.selectedBall = null;
             
@@ -489,6 +492,7 @@ public class UI extends JFrame {
         	}
             graphics.drawString("选中", realX + 20, realY + 35);
         }
+        this.repaint();
     }
 
     /**
@@ -537,17 +541,25 @@ public class UI extends JFrame {
         return false;
     }
 
+    Image image;
+
     @Override
     public void paint(Graphics g) {
-        this.drawBackground(g);
+        doubleBuffer();
+        this.drawBackground(graphics);
         this.drawBalls();
-        update(this.getGraphics());
+        g.drawImage(image, 0, 0, this);
+    }
+
+    private void doubleBuffer() {
+        image = createImage(this.getWidth(), this.getHeight());
+        graphics = image.getGraphics();
     }
 
     /**
-     * 修复闪屏需要的 
-     * 这里查了下CSDN 
-     * 说是update方法清屏会导致闪屏 
+     * 修复闪屏需要的
+     * 这里查了下CSDN
+     * 说是update方法清屏会导致闪屏
      * 重写一下这个方法让他什么也不做就可以了
      */
     @Override
