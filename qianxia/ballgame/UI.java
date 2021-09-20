@@ -69,6 +69,7 @@ public class UI extends JFrame {
                 } else {
                     UI.INSTANCE.selectedBall = ball;
                     UI.INSTANCE.drawBalls();
+                    applyImage();
                 } 
             }
         });
