@@ -110,6 +110,7 @@ public class UI extends JFrame {
                 return;
             }
 
+            selectedBall.setMoving(true);
             for (FindPathUtils.Node node : path) {
                 this.selectedBall.setRow(node.x);
                 this.selectedBall.setColumn(node.y);
@@ -120,6 +121,7 @@ public class UI extends JFrame {
                     e.printStackTrace();
                 }
             }
+            selectedBall.setMoving(false);
             this.selectedBall = null;
             
         	if(!this.boomed) {
@@ -484,15 +486,15 @@ public class UI extends JFrame {
         graphics.fillRoundRect(realX, realY, 60, 60, 100, 100);
         //graphics.fillArc(realX, realY, 60, 60, 220, 300);
         
-        if (this.selectedBall == ball) {
+        if (this.selectedBall == ball && !selectedBall.isMoving()) {
         	if(ball.getColor() == EnumBallColor.BLUE) {
                 graphics.setColor(new Color(255, 255, 255));
         	}else {
                 graphics.setColor(new Color(0, 0, 0));
         	}
             graphics.drawString("选中", realX + 20, realY + 35);
+            applyImage();
         }
-        this.repaint();
     }
 
     /**
@@ -548,7 +550,11 @@ public class UI extends JFrame {
         doubleBuffer();
         this.drawBackground(graphics);
         this.drawBalls();
-        g.drawImage(image, 0, 0, this);
+        applyImage();
+    }
+
+    private void applyImage() {
+        getGraphics().drawImage(image, 0, 0, this);
     }
 
     private void doubleBuffer() {

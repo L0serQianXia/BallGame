@@ -7,6 +7,7 @@ public class Ball {
     private int row;
     /** 球的列数 */
     private int column;
+    private boolean moving;
 
     public Ball(EnumBallColor color, int row, int column) {
         this.color = color;
@@ -36,5 +37,13 @@ public class Ball {
 
     public void setColumn(int column) {
         this.column = column;
+    }
+
+    public boolean isMoving() {
+        return moving;
+    }
+
+    public void setMoving(boolean moving) {
+        this.moving = moving;
     }
 }
