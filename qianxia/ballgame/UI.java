@@ -125,23 +125,20 @@ public class UI extends JFrame {
             selectedBall.setMoving(false);
             paint(getGraphics());
             this.selectedBall = null;
-            
-        	if(!this.boomed) {
-                randomNewBall(3);
-        	}
-            this.boomed = false;
-        	
 
-//            if (!this.ballsToSpawn.isEmpty()) {
-//                for (Ball b : this.ballsToSpawn) {
-//                    if (this.getBallFromGamePosition(new int[] { b.getRow(), b.getColumn() }) != null) {
-//                        this.randomNewBall(1);
-//                        continue;
-//                    }
-//                    this.newBall(b);
-//                }
-//                this.ballsToSpawn.clear();
-//            }
+            if (!this.boomed) {
+                if (!this.ballsToSpawn.isEmpty()) {
+                    for (Ball b : this.ballsToSpawn) {
+                        if (this.getBallFromGamePosition(new int[] { b.getRow(), b.getColumn() }) != null) {
+                            this.randomNewBall(1);
+                            continue;
+                        }
+                        this.newBall(b);
+                    }
+                    this.ballsToSpawn.clear();
+                }
+            }
+            this.boomed = false;
         }
 
         this.repaint();
@@ -229,6 +226,9 @@ public class UI extends JFrame {
         for (Ball ball : this.balls) {
             this.drawBall(ball);
         }
+        for (Ball ball : this.ballsToSpawn) {
+            this.drawBall(ball, true);
+        }
     }
 
     private List<Ball> checkBalls(List<Ball> needToRemoves, int rowOffset, int columnOffset) {
@@ -289,30 +289,27 @@ public class UI extends JFrame {
             JOptionPane.showMessageDialog(null, "得分：" + this.score + "\n用时：" + this.getTime(), "游戏结束，按下鼠标滚轮重置游戏",
                     JOptionPane.INFORMATION_MESSAGE);
         } else {
+            if (!ballsToSpawn.isEmpty()) {
+                return;
+            }
+            for (int i = 0; i < 3; i++) {
+                int row = rm.nextInt(9);
+                int column = rm.nextInt(9);
+                int colorIndex = rm.nextInt(EnumBallColor.values().length);
 
-            
-            
-//            if (!this.ballsToSpawn.isEmpty()) {
-//                this.ballsToSpawn.clear();
-//            }
-//            for (int i = 0; i < 3; i++) {
-//                int row = rm.nextInt(9);
-//                int column = rm.nextInt(9);
-//                int colorIndex = rm.nextInt(EnumBallColor.values().length);
-//
-//                if (this.hasEmpty()) {
-//                    if (this.getBallFromGamePosition(new int[] { row, column }) != null) {
-//                        i--;
-//                        continue;
-//                    }
-//                } else {
-//                    return;
-//                }
-//                
-//                EnumBallColor color = EnumBallColor.values()[colorIndex];
-//                Ball ball = new Ball(color, row, column);
-//                this.ballsToSpawn.add(ball);
-  //          }
+                if (this.hasEmpty()) {
+                    if (this.getBallFromGamePosition(new int[] { row, column }) != null) {
+                        i--;
+                        continue;
+                    }
+                } else {
+                    return;
+                }
+
+                EnumBallColor color = EnumBallColor.values()[colorIndex];
+                Ball ball = new Ball(color, row, column);
+                this.ballsToSpawn.add(ball);
+            }
         }
     }
 
@@ -370,6 +367,10 @@ public class UI extends JFrame {
     }
 
     public void drawBall(Ball ball) {
+        drawBall(ball, false);
+    }
+
+    public void drawBall(Ball ball, boolean notSpawned) {
         if (graphics == null) {
             System.out.println("graphics == null, let's get it again!");
             graphics = this.getGraphics();
@@ -406,18 +407,23 @@ public class UI extends JFrame {
             realY += 60;
         }
 
-        graphics.fillRoundRect(realX, realY, 60, 60, 100, 100);
-        //graphics.fillArc(realX, realY, 60, 60, 220, 300);
-        
-        if (this.selectedBall == ball && !selectedBall.isMoving()) {
-        	if(ball.getColor() == EnumBallColor.BLUE) {
-                graphics.setColor(new Color(255, 255, 255));
-        	}else {
-                graphics.setColor(new Color(0, 0, 0));
-        	}
-            graphics.drawString("选中", realX + 20, realY + 35);
-            applyImage();
+        if (notSpawned) {
+            graphics.fillRoundRect(realX + 15, realY + 15, 30, 30, 100, 100);
+        } else {
+            graphics.fillRoundRect(realX, realY, 60, 60, 100, 100);
         }
+
+            //graphics.fillArc(realX, realY, 60, 60, 220, 300);
+
+            if (this.selectedBall == ball && !selectedBall.isMoving()) {
+                if (ball.getColor() == EnumBallColor.BLUE) {
+                    graphics.setColor(new Color(255, 255, 255));
+                } else {
+                    graphics.setColor(new Color(0, 0, 0));
+                }
+                graphics.drawString("选中", realX + 20, realY + 35);
+                applyImage();
+            }
     }
 
     /**
