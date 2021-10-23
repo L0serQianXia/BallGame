@@ -278,7 +278,7 @@ public class UI extends JFrame {
                 this.balls.remove(ball);
             }
             
-            this.score += (needToRemoves.size() - 4) * 5;
+            this.score += 5 + (needToRemoves.size() - 5) * 10;
             this.boomed = true;
         }
 
