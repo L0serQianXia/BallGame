@@ -17,7 +17,7 @@ import javax.swing.*;
 public class UI extends JFrame {
 	private static final long serialVersionUID = 9107930218742074976L;
 	public final int WIDTH = 580, HEIGHT = 560;
-    public final String BASIC_TITLE = "Fake Magic Lines v1.2";
+    public final String BASIC_TITLE = "Fake Magic Lines v1.3";
 
     public static UI INSTANCE;
 
@@ -123,6 +123,7 @@ public class UI extends JFrame {
                 }
             }
             selectedBall.setMoving(false);
+            paint(getGraphics());
             this.selectedBall = null;
             
         	if(!this.boomed) {
@@ -230,127 +231,48 @@ public class UI extends JFrame {
         }
     }
 
+    private List<Ball> checkBalls(List<Ball> needToRemoves, int rowOffset, int columnOffset) {
+        out: for (Ball ball : this.balls) {
+            List<Ball> balls = new ArrayList<>();
+            int[] ballPosition;
+            for (int i = 1; i < 5; i++) {
+                ballPosition = new int[] { ball.getRow() + rowOffset * i, ball.getColumn() + columnOffset * i };
+                Ball newBall = this.getBallFromGamePosition(ballPosition);
+
+                if (newBall == null) {
+                    continue out;
+                }
+                if (newBall.getColor() == ball.getColor()) {
+                    balls.add(newBall);
+                } else {
+                    balls.clear();
+                    continue out;
+                }
+                balls.add(ball);
+            }
+            if (balls.size() >= 5) {
+                for (Ball needToRemoveBall : balls) {
+                    if(needToRemoves.contains(needToRemoveBall)) {
+                        continue;
+                    }
+                    needToRemoves.add(needToRemoveBall);
+                }
+            }
+        }
+        return needToRemoves;
+    }
+
     public void updateBalls() {
-        int temp = 0;
+        if (selectedBall != null && selectedBall.isMoving()) {
+            return;
+        }
 
         List<Ball> needToRemoves = new ArrayList<>();
+        checkBalls(needToRemoves,1, 0);
+        checkBalls(needToRemoves,0, 1);
+        checkBalls(needToRemoves, 1, 1);
+        checkBalls(needToRemoves,-1, 1);
 
-        out: for (Ball ball : this.balls) {
-            List<Ball> balls = new ArrayList<>();
-            int[] ballPosition = new int[] { ball.getRow(), ball.getColumn() };
-            for (int i = 1; i < 5; i++) {
-                ballPosition = new int[] { ball.getRow() + i, ball.getColumn() };
-                Ball newBall = this.getBallFromGamePosition(ballPosition);
-
-                if (newBall == null) {
-                    continue out;
-                }
-                if (newBall.getColor() == ball.getColor()) {
-                    temp++;
-                    balls.add(newBall);
-                } else {
-                    balls.clear();
-                    continue out;
-                }
-                balls.add(ball);
-            }
-            if (temp >= 5) {
-                for (Ball needToRemoveBall : balls) {
-                   	if(needToRemoves.contains(needToRemoveBall)) {
-                		continue;
-                	}
-                    needToRemoves.add(needToRemoveBall);
-                }
-            }
-        }
-
-        out: for (Ball ball : this.balls) {
-            List<Ball> balls = new ArrayList<>();
-            int[] ballPosition = new int[] { ball.getRow(), ball.getColumn() };
-            for (int i = 1; i < 5; i++) {
-                ballPosition = new int[] { ball.getRow(), ball.getColumn() + i };
-                Ball newBall = this.getBallFromGamePosition(ballPosition);
-
-                if (newBall == null) {
-                    continue out;
-                }
-                if (newBall.getColor() == ball.getColor()) {
-                    temp++;
-                    balls.add(newBall);
-                } else {
-                    balls.clear();
-                    continue out;
-                }
-                balls.add(ball);
-            }
-            if (temp >= 5) {
-                for (Ball needToRemoveBall : balls) {
-                   	if(needToRemoves.contains(needToRemoveBall)) {
-                		continue;
-                	}
-                    needToRemoves.add(needToRemoveBall);
-                }
-            }
-        }
-
-        out: for (Ball ball : this.balls) {
-            List<Ball> balls = new ArrayList<>();
-            int[] ballPosition = new int[] { ball.getRow(), ball.getColumn() };
-            for (int i = 1; i < 5; i++) {
-                ballPosition = new int[] { ball.getRow() + i, ball.getColumn() + i };
-                Ball newBall = this.getBallFromGamePosition(ballPosition);
-
-                if (newBall == null) {
-                    continue out;
-                }
-                if (newBall.getColor() == ball.getColor()) {
-                    temp++;
-                    balls.add(newBall);
-                } else {
-                    balls.clear();
-                    continue out;
-                }
-                balls.add(ball);
-            }
-            if (temp >= 5) {
-                for (Ball needToRemoveBall : balls) {
-                   	if(needToRemoves.contains(needToRemoveBall)) {
-                		continue;
-                	}
-                    needToRemoves.add(needToRemoveBall);
-                }
-            }
-        }
-
-        out: for (Ball ball : this.balls) {
-            List<Ball> balls = new ArrayList<>();
-            int[] ballPosition = new int[] { ball.getRow(), ball.getColumn() };
-            for (int i = 1; i < 5; i++) {
-                ballPosition = new int[] { ball.getRow() - i, ball.getColumn() + i };
-                Ball newBall = this.getBallFromGamePosition(ballPosition);
-
-                if (newBall == null) {
-                    continue out;
-                }
-                if (newBall.getColor() == ball.getColor()) {
-                    temp++;
-                    balls.add(newBall);
-                } else {
-                    balls.clear();
-                    continue out;
-                }
-                balls.add(ball);
-            }
-            if (temp >= 5) {
-                for (Ball needToRemoveBall : balls) {
-                	if(needToRemoves.contains(needToRemoveBall)) {
-                		continue;
-                	}
-                    needToRemoves.add(needToRemoveBall);
-                }
-            }
-        }
-        
         if (needToRemoves.size() != 0) {
             for (Ball ball : needToRemoves) {
                 this.balls.remove(ball);
