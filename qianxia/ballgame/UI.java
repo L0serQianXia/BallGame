@@ -65,7 +65,7 @@ public class UI extends JFrame {
                 }
 
                 if (UI.INSTANCE.selectedBall != null && ball == null) {
-                    UI.INSTANCE.moveBall(ball, position);
+                    UI.INSTANCE.moveSelectedBall(position);
                 } else {
                     UI.INSTANCE.selectedBall = ball;
                     UI.INSTANCE.drawBalls();
@@ -87,7 +87,7 @@ public class UI extends JFrame {
         this.gameStartTime = System.currentTimeMillis();
     }
 
-    public void moveBall(Ball ball, int[] position) {
+    public void moveSelectedBall(int[] position) {
         if (this.selectedBall != null) {
             if (this.getBallFromGamePosition(position) != null) {
                 this.selectedBall = null;
@@ -97,17 +97,7 @@ public class UI extends JFrame {
             List<FindPathUtils.Node> path = FindPathUtils.findPath(new int[]{selectedBall.getRow(), selectedBall.getColumn()}, position);
             // path == null 说明这个位置无法到达，抖动表示错误的位置移动
             if (path == null) {
-                int x = this.getX();
-                int y = this.getY();
-                for (int i = 1; i < 10; i++) {
-                    this.setLocation(this.getX() - new Random().nextInt(20), this.getY() + new Random().nextInt(20));
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    this.setLocation(x, y);
-                }
+                shakeTheWindow();
                 return;
             }
 
@@ -142,6 +132,20 @@ public class UI extends JFrame {
         }
 
         this.repaint();
+    }
+
+    private void shakeTheWindow() {
+        int x = this.getX();
+        int y = this.getY();
+        for (int i = 1; i < 10; i++) {
+            this.setLocation(this.getX() - new Random().nextInt(20), this.getY() + new Random().nextInt(20));
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            this.setLocation(x, y);
+        }
     }
 
     public int[] getGamePositionByMousePosition(int mouseX, int mouseY) {
@@ -293,22 +297,7 @@ public class UI extends JFrame {
                 return;
             }
             for (int i = 0; i < 3; i++) {
-                int row = rm.nextInt(9);
-                int column = rm.nextInt(9);
-                int colorIndex = rm.nextInt(EnumBallColor.values().length);
-
-                if (this.hasEmpty()) {
-                    if (this.getBallFromGamePosition(new int[] { row, column }) != null) {
-                        i--;
-                        continue;
-                    }
-                } else {
-                    return;
-                }
-
-                EnumBallColor color = EnumBallColor.values()[colorIndex];
-                Ball ball = new Ball(color, row, column);
-                this.ballsToSpawn.add(ball);
+                this.ballsToSpawn.add(getRandomBallInfo());
             }
         }
     }
@@ -337,21 +326,24 @@ public class UI extends JFrame {
 
     public void randomNewBall(int numbers) {
         for (int i = 0; i < numbers; i++) {
-            int row = rm.nextInt(9);
-            int column = rm.nextInt(9);
-            int colorIndex = rm.nextInt(EnumBallColor.values().length);
-
-            if (this.hasEmpty()) {
-                if (this.getBallFromGamePosition(new int[] { row, column }) != null) {
-                    i--;
-                    continue;
-                }
-            } else {
-                return;
-            }
-
-            this.newBall(EnumBallColor.values()[colorIndex], row, column);
+            Ball ball = getRandomBallInfo();
+            this.newBall(ball);
         }
+    }
+
+    private Ball getRandomBallInfo() {
+        return getRandomBallInfo(rm.nextInt(EnumBallColor.values().length));
+    }
+
+    private Ball getRandomBallInfo(int colorIndex) {
+        int row = rm.nextInt(9);
+        int column = rm.nextInt(9);
+
+        while (this.hasEmpty() && this.getBallFromGamePosition(new int[] { row, column }) != null) {
+            row = rm.nextInt(9);
+            column = rm.nextInt(9);
+        }
+        return new Ball(EnumBallColor.values()[colorIndex], row, column);
     }
 
     public boolean hasEmpty() {
@@ -413,17 +405,15 @@ public class UI extends JFrame {
             graphics.fillRoundRect(realX, realY, 60, 60, 100, 100);
         }
 
-            //graphics.fillArc(realX, realY, 60, 60, 220, 300);
-
-            if (this.selectedBall == ball && !selectedBall.isMoving()) {
-                if (ball.getColor() == EnumBallColor.BLUE) {
-                    graphics.setColor(new Color(255, 255, 255));
-                } else {
-                    graphics.setColor(new Color(0, 0, 0));
-                }
-                graphics.drawString("选中", realX + 20, realY + 35);
-                applyImage();
+        if (this.selectedBall == ball && !selectedBall.isMoving()) {
+            if (ball.getColor() == EnumBallColor.BLUE) {
+                graphics.setColor(new Color(255, 255, 255));
+            } else {
+                graphics.setColor(new Color(0, 0, 0));
             }
+            graphics.drawString("选中", realX + 20, realY + 35);
+            applyImage();
+        }
     }
 
     /**
@@ -491,15 +481,8 @@ public class UI extends JFrame {
         graphics = image.getGraphics();
     }
 
-    /**
-     * 修复闪屏需要的
-     * 这里查了下CSDN
-     * 说是update方法清屏会导致闪屏
-     * 重写一下这个方法让他什么也不做就可以了
-     */
     @Override
-    public void update(Graphics g) {
-    }
+    public void update(Graphics g) { }
 
     class UpdateScore extends Thread {
         @Override
