@@ -441,7 +441,7 @@ public class UI extends JFrame {
         for (int i = 0; i < 9; i++) {
             for (int j = 0; j < 9; j++) {
                 Ball ball = this.getBallFromGamePosition(new int[] { i, j });
-                if (ball == null) {
+                if (ball == null && !hasBall(i, j)) {
                     return true;
                 }
             }
