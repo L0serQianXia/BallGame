@@ -8,6 +8,8 @@ public class Ball {
     /** 球的列数 */
     private int column;
     private boolean moving;
+    private int animWidth;
+    private int animHeight;
 
     public Ball(EnumBallColor color, int row, int column) {
         this.color = color;
@@ -46,4 +48,29 @@ public class Ball {
     public void setMoving(boolean moving) {
         this.moving = moving;
     }
+
+    public int getAnimWidth() {
+        return animWidth;
+    }
+
+    public void setAnimWidth(int animWidth) {
+        this.animWidth = animWidth;
+    }
+
+    public int getAnimHeight() {
+        return animHeight;
+    }
+
+    public void setAnimHeight(int animHeight) {
+        this.animHeight = animHeight;
+    }
+
+    public int getAndAddAnimWidth() {
+        return animWidth++;
+    }
+
+    public int getAndAddAnimHeight() {
+        return animHeight++;
+    }
+
 }

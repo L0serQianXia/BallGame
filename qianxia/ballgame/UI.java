@@ -30,7 +30,8 @@ public class UI extends JFrame {
     private Random rm = new Random();
     private Graphics graphics;
 	private boolean boomed;
-    
+    private boolean animating;
+
     public UI() {
         UI.INSTANCE = this;
 
@@ -45,6 +46,9 @@ public class UI extends JFrame {
             public void mousePressed(MouseEvent e) {
                 int mouseX = e.getX();
                 int mouseY = e.getY();
+                if (animating) {
+                    return;
+                }
 
                 if (e.getButton() == 2) {
                     int result = JOptionPane.showConfirmDialog(null, "确定重置游戏？", "提示：", JOptionPane.YES_NO_OPTION);
@@ -124,6 +128,43 @@ public class UI extends JFrame {
                             continue;
                         }
                         this.newBall(b);
+                    }
+                    int index = 0;
+                    Ball ball = this.ballsToSpawn.get(index);
+                    if (graphics == null) {
+                        System.out.println("graphics == null, let's get it again!");
+                        graphics = image.getGraphics();
+                    }
+                    int realX = 20;
+                    int realY = 20;
+                    setColor(ball);
+                    for (int i = 0; i < ball.getRow(); i++) {
+                        realX += 60;
+                    }
+                    for (int i = 0; i < ball.getColumn(); i++) {
+                        realY += 60;
+                    }
+                    while (ball.getAnimWidth() < 60 && ball.getAnimHeight() < 60) {
+                        realX = 20;
+                        realY = 20;
+                        setColor(ball);
+                        for (int i = 0; i < ball.getRow(); i++) {
+                            realX += 60;
+                        }
+                        for (int i = 0; i < ball.getColumn(); i++) {
+                            realY += 60;
+                        }
+                        graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAndAddAnimWidth(), ball.getAndAddAnimHeight(), 100, 100);
+                        try {
+                            Thread.sleep(5);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        ball = ballsToSpawn.get(index++);
+                        if (index >= ballsToSpawn.size()) {
+                            index = 0;
+                        }
+                        applyImage();
                     }
                     this.ballsToSpawn.clear();
                 }
@@ -227,11 +268,150 @@ public class UI extends JFrame {
 
         this.updateBalls();
 
-        for (Ball ball : this.balls) {
-            this.drawBall(ball);
+        animating = true;
+        int index = 0;
+        Ball ball = this.balls.get(index);
+        if (graphics == null) {
+            System.out.println("graphics == null, let's get it again!");
+            graphics = image.getGraphics();
         }
-        for (Ball ball : this.ballsToSpawn) {
-            this.drawBall(ball, true);
+        int realX = 20;
+        int realY = 20;
+        setColor(ball);
+        for (int i = 0; i < ball.getRow(); i++) {
+            realX += 60;
+        }
+        for (int i = 0; i < ball.getColumn(); i++) {
+            realY += 60;
+        }
+        while (ball.getAnimWidth() < 60 && ball.getAnimHeight() < 60) {
+            realX = 20;
+            realY = 20;
+            setColor(ball);
+            for (int i = 0; i < ball.getRow(); i++) {
+                realX += 60;
+            }
+            for (int i = 0; i < ball.getColumn(); i++) {
+                realY += 60;
+            }
+            graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAndAddAnimWidth(), ball.getAndAddAnimHeight(), 100, 100);
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            ball = balls.get(index++);
+            if (index >= balls.size()) {
+                index = 0;
+            }
+            applyImage();
+        }
+        for (Ball ball1 : balls) {
+            realX = 20;
+            realY = 20;
+            setColor(ball1);
+            for (int i = 0; i < ball1.getRow(); i++) {
+                realX += 60;
+            }
+            for (int i = 0; i < ball1.getColumn(); i++) {
+                realY += 60;
+            }
+            graphics.fillRoundRect(realX + 30 - ball1.getAnimWidth() / 2, realY + 30 - ball1.getAnimHeight() / 2, ball1.getAnimWidth(), ball1.getAnimHeight(), 100, 100);
+        }
+        for (Ball ball1 : balls) {
+            if (this.selectedBall == ball1 && !selectedBall.isMoving()) {
+                realX = 20;
+                realY = 20;
+                setColor(ball1);
+                for (int i = 0; i < ball1.getRow(); i++) {
+                    realX += 60;
+                }
+                for (int i = 0; i < ball1.getColumn(); i++) {
+                    realY += 60;
+                }
+                if (ball1.getColor() == EnumBallColor.BLUE) {
+                    graphics.setColor(new Color(255, 255, 255));
+                } else {
+                    graphics.setColor(new Color(0, 0, 0));
+                }
+                graphics.drawString("选中", realX + 20, realY + 35);
+                applyImage();
+            }
+        }
+
+
+        index = 0;
+        ball = this.ballsToSpawn.get(index);
+        realX = 20;
+        realY = 20;
+        setColor(ball);
+        for (int i = 0; i < ball.getRow(); i++) {
+            realX += 60;
+        }
+        for (int i = 0; i < ball.getColumn(); i++) {
+            realY += 60;
+        }
+        while (ball.getAnimWidth() < 30 && ball.getAnimHeight() < 30) {
+            realX = 20;
+            realY = 20;
+            setColor(ball);
+            for (int i = 0; i < ball.getRow(); i++) {
+                realX += 60;
+            }
+            for (int i = 0; i < ball.getColumn(); i++) {
+                realY += 60;
+            }
+            graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAndAddAnimWidth(), ball.getAndAddAnimHeight(), 100, 100);
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            ball = ballsToSpawn.get(index++);
+            if (index >= ballsToSpawn.size()) {
+                index = 0;
+            }
+            applyImage();
+        }
+        for (Ball ball1 : ballsToSpawn) {
+            realX = 20;
+            realY = 20;
+            setColor(ball1);
+            for (int i = 0; i < ball1.getRow(); i++) {
+                realX += 60;
+            }
+            for (int i = 0; i < ball1.getColumn(); i++) {
+                realY += 60;
+            }
+            graphics.fillRoundRect(realX + 30 - ball1.getAnimWidth() / 2, realY + 30 - ball1.getAnimHeight() / 2, ball1.getAnimWidth(), ball1.getAnimHeight(), 100, 100);
+        }
+        applyImage();
+        animating = false;
+//        for (Ball ball1 : this.balls) {
+//            this.drawBall(ball1, false);
+//        }
+    }
+
+    private void setColor(Ball ball) {
+        switch (ball.getColor()) {
+            case BLUE:
+                graphics.setColor(new Color(0, 3, 161));
+                break;
+            case GREEN:
+                graphics.setColor(new Color(0, 128, 0));
+                break;
+            case WHITE:
+                graphics.setColor(new Color(255, 255, 255));
+                break;
+            case RED:
+                graphics.setColor(new Color(205, 92, 92));
+                break;
+            case CYAN:
+                graphics.setColor(new Color(0, 139, 139));
+                break;
+            default:
+                graphics.setColor(new Color(0, 0, 0));
+                break;
         }
     }
 
