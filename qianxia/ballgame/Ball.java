@@ -11,6 +11,11 @@ public class Ball {
     private int animWidth;
     private int animHeight;
 
+    public Ball(int row, int column) {
+        this.row = row;
+        this.column = column;
+    }
+
     public Ball(EnumBallColor color, int row, int column) {
         this.color = color;
         this.row = row;
@@ -73,4 +78,21 @@ public class Ball {
         return animHeight++;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Ball ball = (Ball) o;
+
+        if (row != ball.row) return false;
+        return column == ball.column;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = row;
+        result = 31 * result + column;
+        return result;
+    }
 }

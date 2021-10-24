@@ -3,9 +3,8 @@ package qianxia.ballgame;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Random;
 
 import javax.swing.*;
 
@@ -19,15 +18,16 @@ public class UI extends JFrame {
 	public final int WIDTH = 580, HEIGHT = 560;
     public final String BASIC_TITLE = "Fake Magic Lines v1.3";
 
+    private final List<Ball> balls = new ArrayList<>();
+    private final List<Ball> ballsToSpawn = new ArrayList<>();
+    private final Random random = new Random();
+
     public static UI INSTANCE;
 
-    private List<Ball> balls = new ArrayList<>();
-    private List<Ball> ballsToSpawn = new ArrayList<>();
     private Ball selectedBall = null;
     private int score = 0;
-    private long gameStartTime = -1;
+    private long gameStartTime;
 
-    private Random rm = new Random();
     private Graphics graphics;
 	private boolean boomed;
     private boolean animating;
@@ -71,6 +71,10 @@ public class UI extends JFrame {
                 if (UI.INSTANCE.selectedBall != null && ball == null) {
                     UI.INSTANCE.moveSelectedBall(position);
                 } else {
+                    // game over
+                    if (!hasEmpty()) {
+                        return;
+                    }
                     UI.INSTANCE.selectedBall = ball;
                     UI.INSTANCE.drawBalls();
                     applyImage();
@@ -120,59 +124,67 @@ public class UI extends JFrame {
             paint(getGraphics());
             this.selectedBall = null;
 
-            if (!this.boomed) {
-                if (!this.ballsToSpawn.isEmpty()) {
-                    for (Ball b : this.ballsToSpawn) {
-                        if (this.getBallFromGamePosition(new int[] { b.getRow(), b.getColumn() }) != null) {
-                            this.randomNewBall(1);
-                            continue;
-                        }
-                        this.newBall(b);
+            // 上一次消除了球不应该继续生成球，下一次移动再生成
+            if (!this.boomed && !this.ballsToSpawn.isEmpty()) {
+                List<Ball> coolBalls = new ArrayList<>();
+                Iterator<Ball> iterator = this.ballsToSpawn.iterator();
+                while (iterator.hasNext()) {
+                    Ball b = iterator.next();
+                    if (this.getBallFromGamePosition(b.getRow(), b.getColumn()) != null) {
+                        Ball ball = getRandomBallInfo(b.getColor());
+                        coolBalls.add(ball);
+                        this.newBall(ball);
+                        iterator.remove();
+                        continue;
                     }
-                    int index = 0;
-                    Ball ball = this.ballsToSpawn.get(index);
-                    if (graphics == null) {
-                        System.out.println("graphics == null, let's get it again!");
-                        graphics = image.getGraphics();
-                    }
-                    int realX = 20;
-                    int realY = 20;
-                    setColor(ball);
-                    for (int i = 0; i < ball.getRow(); i++) {
-                        realX += 60;
-                    }
-                    for (int i = 0; i < ball.getColumn(); i++) {
-                        realY += 60;
-                    }
-                    while (ball.getAnimWidth() < 60 && ball.getAnimHeight() < 60) {
-                        realX = 20;
-                        realY = 20;
-                        setColor(ball);
-                        for (int i = 0; i < ball.getRow(); i++) {
-                            realX += 60;
-                        }
-                        for (int i = 0; i < ball.getColumn(); i++) {
-                            realY += 60;
-                        }
-                        graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAndAddAnimWidth(), ball.getAndAddAnimHeight(), 100, 100);
-                        try {
-                            Thread.sleep(5);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        ball = ballsToSpawn.get(index++);
-                        if (index >= ballsToSpawn.size()) {
-                            index = 0;
-                        }
-                        applyImage();
-                    }
-                    this.ballsToSpawn.clear();
+                    this.newBall(b);
                 }
+                this.ballsToSpawn.addAll(coolBalls);
+                doAnimation(this.ballsToSpawn, 60);
+                // 检查是否有没有完全生成的球（是待生成的球的大小）
+                for (Ball ball1 : ballsToSpawn) {
+                    if (ball1.getAnimWidth() < 60 && ball1.getAnimHeight() < 60) {
+                        doAnimation(Collections.singletonList(ball1), 60);
+                    }
+                }
+                this.ballsToSpawn.clear();
             }
             this.boomed = false;
         }
 
         this.repaint();
+    }
+
+    private void checkGraphics() {
+        if (graphics == null) {
+            System.out.println("graphics == null, let's get it again!");
+            graphics = image.getGraphics();
+        }
+    }
+
+    private void doAnimation(List<Ball> balls, int ballBox) {
+        if(balls.isEmpty()) return;
+        int index = 0;
+        int realX, realY;
+        Ball ball = balls.get(index);
+        checkGraphics();
+
+        while (ball.getAnimWidth() < ballBox && ball.getAnimHeight() < ballBox) {
+            setColor(ball);
+            realX = 20 + ball.getRow() * 60;
+            realY = 20 + ball.getColumn() * 60;
+            graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAndAddAnimWidth(), ball.getAndAddAnimHeight(), 100, 100);
+            try {
+                Thread.sleep(5);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            ball = balls.get(index++);
+            if (index >= balls.size()) {
+                index = 0;
+            }
+            applyImage();
+        }
     }
 
     private void shakeTheWindow() {
@@ -193,31 +205,19 @@ public class UI extends JFrame {
         int row = -1;
         int column = -1;
 
-        mainLooping: for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 9; i++) {
             for (int j = 0; j <= 80; j++) {
-                if (mouseX <= j) {
+                if (mouseX <= j && row == -1) {
                     row = i;
-                    break mainLooping;
+                }
+                if (mouseY <= j && column == -1) {
+                    column = i;
                 }
             }
             mouseX -= 60;
-        }
-
-        mainLooping: for (int i = 0; i < 9; i++) {
-            for (int j = 0; j <= 80; j++) {
-                if (mouseY <= j) {
-                    column = i;
-                    break mainLooping;
-                }
-            }
             mouseY -= 60;
         }
         return new int[] { row, column };
-    }
-
-    public void newBall(int mouseX, int mouseY) {
-        int[] position = getGamePositionByMousePosition(mouseX, mouseY);
-        this.newBall(EnumBallColor.BLUE, position);
     }
 
     /**
@@ -265,71 +265,32 @@ public class UI extends JFrame {
         if (this.balls.size() == 0) {
             this.randomNewBall(3);
         }
-
         this.updateBalls();
 
         animating = true;
-        int index = 0;
-        Ball ball = this.balls.get(index);
-        if (graphics == null) {
-            System.out.println("graphics == null, let's get it again!");
-            graphics = image.getGraphics();
-        }
-        int realX = 20;
-        int realY = 20;
-        setColor(ball);
-        for (int i = 0; i < ball.getRow(); i++) {
-            realX += 60;
-        }
-        for (int i = 0; i < ball.getColumn(); i++) {
-            realY += 60;
-        }
-        while (ball.getAnimWidth() < 60 && ball.getAnimHeight() < 60) {
-            realX = 20;
-            realY = 20;
+        drawBalls(this.ballsToSpawn);
+        drawBalls(this.balls);
+        doAnimation(this.ballsToSpawn, 30);
+        doAnimation(this.balls, 60);
+        drawBalls(this.ballsToSpawn);
+        drawBalls(this.balls);
+        applyImage();
+        animating = false;
+    }
+
+    private void drawBalls(List<Ball> balls) {
+        int realX, realY;
+        for (Ball ball : balls) {
+            realX = 20 + ball.getRow() * 60;
+            realY = 20 + ball.getColumn() * 60;
             setColor(ball);
-            for (int i = 0; i < ball.getRow(); i++) {
-                realX += 60;
-            }
-            for (int i = 0; i < ball.getColumn(); i++) {
-                realY += 60;
-            }
-            graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAndAddAnimWidth(), ball.getAndAddAnimHeight(), 100, 100);
-            try {
-                Thread.sleep(5);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            ball = balls.get(index++);
-            if (index >= balls.size()) {
-                index = 0;
-            }
-            applyImage();
+            graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAnimWidth(), ball.getAnimHeight(), 100, 100);
         }
-        for (Ball ball1 : balls) {
-            realX = 20;
-            realY = 20;
-            setColor(ball1);
-            for (int i = 0; i < ball1.getRow(); i++) {
-                realX += 60;
-            }
-            for (int i = 0; i < ball1.getColumn(); i++) {
-                realY += 60;
-            }
-            graphics.fillRoundRect(realX + 30 - ball1.getAnimWidth() / 2, realY + 30 - ball1.getAnimHeight() / 2, ball1.getAnimWidth(), ball1.getAnimHeight(), 100, 100);
-        }
-        for (Ball ball1 : balls) {
-            if (this.selectedBall == ball1 && !selectedBall.isMoving()) {
-                realX = 20;
-                realY = 20;
-                setColor(ball1);
-                for (int i = 0; i < ball1.getRow(); i++) {
-                    realX += 60;
-                }
-                for (int i = 0; i < ball1.getColumn(); i++) {
-                    realY += 60;
-                }
-                if (ball1.getColor() == EnumBallColor.BLUE) {
+        for (Ball ball : balls) {
+            if (this.selectedBall == ball && !selectedBall.isMoving()) {
+                realX = 20 + ball.getRow() * 60;
+                realY = 20 + ball.getColumn() * 60;
+                if (ball.getColor() == EnumBallColor.BLUE) {
                     graphics.setColor(new Color(255, 255, 255));
                 } else {
                     graphics.setColor(new Color(0, 0, 0));
@@ -338,58 +299,6 @@ public class UI extends JFrame {
                 applyImage();
             }
         }
-
-
-        index = 0;
-        ball = this.ballsToSpawn.get(index);
-        realX = 20;
-        realY = 20;
-        setColor(ball);
-        for (int i = 0; i < ball.getRow(); i++) {
-            realX += 60;
-        }
-        for (int i = 0; i < ball.getColumn(); i++) {
-            realY += 60;
-        }
-        while (ball.getAnimWidth() < 30 && ball.getAnimHeight() < 30) {
-            realX = 20;
-            realY = 20;
-            setColor(ball);
-            for (int i = 0; i < ball.getRow(); i++) {
-                realX += 60;
-            }
-            for (int i = 0; i < ball.getColumn(); i++) {
-                realY += 60;
-            }
-            graphics.fillRoundRect(realX + 30 - ball.getAnimWidth() / 2, realY + 30 - ball.getAnimHeight() / 2, ball.getAndAddAnimWidth(), ball.getAndAddAnimHeight(), 100, 100);
-            try {
-                Thread.sleep(5);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            ball = ballsToSpawn.get(index++);
-            if (index >= ballsToSpawn.size()) {
-                index = 0;
-            }
-            applyImage();
-        }
-        for (Ball ball1 : ballsToSpawn) {
-            realX = 20;
-            realY = 20;
-            setColor(ball1);
-            for (int i = 0; i < ball1.getRow(); i++) {
-                realX += 60;
-            }
-            for (int i = 0; i < ball1.getColumn(); i++) {
-                realY += 60;
-            }
-            graphics.fillRoundRect(realX + 30 - ball1.getAnimWidth() / 2, realY + 30 - ball1.getAnimHeight() / 2, ball1.getAnimWidth(), ball1.getAnimHeight(), 100, 100);
-        }
-        applyImage();
-        animating = false;
-//        for (Ball ball1 : this.balls) {
-//            this.drawBall(ball1, false);
-//        }
     }
 
     private void setColor(Ball ball) {
@@ -467,9 +376,7 @@ public class UI extends JFrame {
         }
 
         if (!this.hasEmpty()) {
-            for (Ball ball : balls) {
-                this.drawBall(ball);
-            }
+            this.drawBalls(this.balls);
             JOptionPane.showMessageDialog(null, "得分：" + this.score + "\n用时：" + this.getTime(), "游戏结束，按下鼠标滚轮重置游戏",
                     JOptionPane.INFORMATION_MESSAGE);
         } else {
@@ -512,18 +419,22 @@ public class UI extends JFrame {
     }
 
     private Ball getRandomBallInfo() {
-        return getRandomBallInfo(rm.nextInt(EnumBallColor.values().length));
+        return getRandomBallInfo(EnumBallColor.values()[random.nextInt(EnumBallColor.values().length)]);
     }
 
-    private Ball getRandomBallInfo(int colorIndex) {
-        int row = rm.nextInt(9);
-        int column = rm.nextInt(9);
+    private Ball getRandomBallInfo(EnumBallColor color) {
+        int row = random.nextInt(9);
+        int column = random.nextInt(9);
 
-        while (this.hasEmpty() && this.getBallFromGamePosition(new int[] { row, column }) != null) {
-            row = rm.nextInt(9);
-            column = rm.nextInt(9);
+        while (this.hasEmpty() && this.hasBall(row, column)) {
+            row = random.nextInt(9);
+            column = random.nextInt(9);
         }
-        return new Ball(EnumBallColor.values()[colorIndex], row, column);
+        return new Ball(color, row, column);
+    }
+
+    private boolean hasBall(int row, int column) {
+        return this.getBallFromGamePosition(row, column) != null || this.ballsToSpawn.contains(new Ball(row, column));
     }
 
     public boolean hasEmpty() {
@@ -536,64 +447,6 @@ public class UI extends JFrame {
             }
         }
         return false;
-    }
-
-    public void drawBall(Ball ball) {
-        drawBall(ball, false);
-    }
-
-    public void drawBall(Ball ball, boolean notSpawned) {
-        if (graphics == null) {
-            System.out.println("graphics == null, let's get it again!");
-            graphics = this.getGraphics();
-        }
-        int realX = 20;
-        int realY = 20;
-
-        switch (ball.getColor()) {
-            case BLUE:
-                graphics.setColor(new Color(0, 3, 161));
-                break;
-            case GREEN:
-                graphics.setColor(new Color(0, 128, 0));
-                break;
-            case WHITE:
-                graphics.setColor(new Color(255, 255, 255));
-                break;
-            case RED:
-                graphics.setColor(new Color(205, 92, 92));
-                break;
-            case CYAN:
-                graphics.setColor(new Color(0, 139, 139));
-                break;
-            default:
-                graphics.setColor(new Color(0, 0, 0));
-                break;
-        }
-
-        for (int i = 0; i < ball.getRow(); i++) {
-            realX += 60;
-        }
-
-        for (int i = 0; i < ball.getColumn(); i++) {
-            realY += 60;
-        }
-
-        if (notSpawned) {
-            graphics.fillRoundRect(realX + 15, realY + 15, 30, 30, 100, 100);
-        } else {
-            graphics.fillRoundRect(realX, realY, 60, 60, 100, 100);
-        }
-
-        if (this.selectedBall == ball && !selectedBall.isMoving()) {
-            if (ball.getColor() == EnumBallColor.BLUE) {
-                graphics.setColor(new Color(255, 255, 255));
-            } else {
-                graphics.setColor(new Color(0, 0, 0));
-            }
-            graphics.drawString("选中", realX + 20, realY + 35);
-            applyImage();
-        }
     }
 
     /**
@@ -621,25 +474,6 @@ public class UI extends JFrame {
             }
         }
         return null;
-    }
-
-    /**
-     * 根据传入的横纵来判断该位置是否有球
-     * 
-     * @param row
-     * @param column
-     * @return
-     */
-    public boolean isHaveBall(int row, int column) {
-        for (Ball ball : this.balls) {
-            boolean flag = ball.getRow() == row && ball.getColumn() == column;
-
-            if (flag) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     Image image;
